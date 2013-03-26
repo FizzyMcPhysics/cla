@@ -1,11 +1,11 @@
-
 from config import *
 from inputbit import InputVector
 from column import Column
 
 class Region:
 	"""An HTM cortical region"""
-	#array of columns or 2D for inhibition
+	# Array of columns in 2D for inhibition. Not my prefered geomertry, 
+        # but I'm working from a fork. I may make it a 1D geometry at some point.
 	def __init__(self,rows,cols,inputVector,coverage,desiredLocalActivity):
 			self.rows = rows
 			self.cols = cols
