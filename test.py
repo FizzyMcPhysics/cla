@@ -1,6 +1,11 @@
+#!/usr/bin/python
 from region import Region
 from config import *
 from inputbit import InputVector
+import nxt.locator
+from nxt.sensor import*   
+
+brick = nxt.locator.find_one_brick()
 
 def testCount():
 	rows = 5
@@ -12,65 +17,71 @@ def testCount():
 	originalInputVector = InputVector(numbits)
 	inputVector = InputVector(0)
 
-	pred = dict()
+	predictions = dict()
 	#repeat several times to increase activity:
 	for i in range(3):
 		inputVector.extendVector(originalInputVector)
 
 	desiredLocalActivity = DESIRED_LOCAL_ACTIVITY
 
-	r = Region(rows,cols,inputVector,coverage,desiredLocalActivity)
-	outputVector = r.getOutputVector()
-	correctBitPredctions = 0
-	for round in range(numRounds):
+	newRegion = Region(rows,cols,inputVector,coverage,desiredLocalActivity)
+	outputVector = newRegion.getOutputVector()
+	correctBitPredictions = 0
+ 
+	for round in range(numRounds): # This test executes the CLA for a set number of rounds. 
+     
 		#print("Round: " + str(round))
 		# if (round % 2 == 0):
 		# 	val = 682
 		# else:
 		# 	val = 341
-		val = round % 30
+		val = Ultrasonic(brick, PORT_1).get_sample()
 		setInput(originalInputVector,val)
 		inputString = inputVector.toString()
 		outputString = outputVector.toString()
-		# for bit in inputVector.getVector():
-		# 	printBit(bit)
+		#print(originalInputVector.toString())
+           
+		#for bit in originalInputVector.getVector():
+		# 	print(bit.bit)
 		# print('')
 		# print(inputString)
 
 
-		if outputString in pred:
-			curPredString = pred[outputString]
+		if outputString in predictions:
+			currentPredictionString = predictions[outputString]
 		else:
-			curPredString = "[New input]"
-			pred[outputString] = inputString
-
-		printStats(inputString,curPredString)
+			currentPredictionString = "[New input]"
+			pred[outputString] = inputString # I'm sure this should be indented like this...
+		print("Round: %d" % round) # Prints the number of the round
+		printStats(inputString, currentPredictionString)
 		if (round > trainingRounds):
-			correctBitPredctions += stringOverlap(curPredString,pred[outputString])
+			correctBitPredictions += stringOverlap(currentPredictionString, predictions[outputString])
 				 
 
-		r.doRound()
-		printColumnStats(r)
-	for key in pred:
-		print("key: " + key + " pred: " + pred[key])
+		newRegion.doRound()
+		printColumnStats(newRegion)
+	for key in predictions:
+		print("key: " + key + " predictions: " + predictions[key])
 
-	print("Accuracy: " + str(float(correctBitPredctions)/float((30*(numRounds-trainingRounds)))))
+	print("Accuracy: " + str(float(correctBitPredictions)/float((30*(numRounds-trainingRounds)))))
 
 
 def stringOverlap(str1,str2):
 	count = 0
-	length = min(len(str1),len(str2))
-	for i in range(length):
-		if (str1[i] == str2[i]):
+	length = min(len(str1),len(str2)) # Returns the length of the smallest string
+	for i in range(length):           # For the length of the smallest string, compare the bits
+		if (str1[i] == str2[i]):    # If bits are equal, increment 'count'. 
 			count += 1
-	return count
+	return count                     # Returns the number of bits in two strings which are the same. 
 
 
 def printStats(inputVector,outputVector):
-	print('Input-: ',end='')
-	print(inputVector)
-	print('Output: ',end='')
-	print(outputVector)
+	#print('Input-: ',end='')
+      print('Input-:')
+      print(inputVector)
+      #print('Output: ',end='')
+      print('Output-: ')
+      print(outputVector)
 
 
 def setInput(inputVector,bitArray):
@@ -83,7 +94,7 @@ def printColumnStats(r):
 	alarmColumnCount = 0
 	stableColumnCount = 0
 	errorColumnsFound = 0
-	for c in r.columns:
+	for c in newRegion.columns:
 		if (not c.isActive()):
 				continue
 		allCellsActive = True
@@ -101,4 +112,6 @@ def printColumnStats(r):
 			errorColumnsFound += 1
 	print("Alarm Columns: " + str(alarmColumnCount) + " Stable Columns: " + str(stableColumnCount))
 
-
+# debug main run
+print("Running!")
+testCount()
