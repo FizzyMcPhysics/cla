@@ -1,4 +1,3 @@
-
 from region import Region
 from config import *
 from inputbit import InputVector
@@ -43,7 +42,7 @@ def testCount():
 			curPredString = pred[outputString]
 		else:
 			curPredString = "[New input]"
-		pred[outputString] = inputString
+			pred[outputString] = inputString 
 
 		printStats(inputString,curPredString)
 		if (round > trainingRounds):
