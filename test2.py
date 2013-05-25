@@ -22,11 +22,12 @@ def experiment():
     cols = 5
     coverage = 20
     numbits = 10 # I may need more bits for my readngs.
-    numRounds = 2
+    numRounds = 10
     numRuns = 1
     minimum_distance = 7
     #trainingRounds = numRounds/4
     accuracies = []
+    sonarPositionResults = []
     originalInputVector = InputVector(numbits)
     inputVector = InputVector(0)
     predictions = dict()
@@ -53,6 +54,7 @@ def experiment():
     correctBitPredictions = 0
     
     robot = Robot()
+    starting_position = robot.sonarReading()
     robot.move()
  
 
@@ -65,7 +67,6 @@ def experiment():
         end_this_round = False
         stuck_counter = 0
         print state
-        starting_position = robot.sonarReading()
         round_number = round+1
         print ("Round: %d" % round_number) # Prints the number of the round
             #printStats(inputString, currentPredictionString)
@@ -74,6 +75,7 @@ def experiment():
         while end_this_round is False:            
             val = robot.sonarReading()
             print ("Sonar: %d cm" % val)
+            sonarPositionResults.append(robot.currentSonarReading)
             setInput(originalInputVector,val) # These next few lines convert the inputs and outputs from integers to bitstrings,
             inputString = inputVector.toString() # so that the CLA can handle them.
             outputString = outputVector.toString()
@@ -85,19 +87,24 @@ def experiment():
        	  #print(inputString)       
        
             if outputString in predictions: # If output string has been seen before, 
-                currentPredictionString = predictions[outputString] # make it the "currentPredictionString"
+                currentPredictionString = predictions[outputString] 
+                # summon the last input that caused that prediction and make it the "currentPredictionString"? That's confusing...
             else:
                 currentPredictionString = "[New input]" # If not seen before, 
-                predictions[outputString] = inputString # make it a new entry in the predictions dictionary 
+            predictions[outputString] = inputString # Update the i/o record with the new relationship 
                             
             #if (round > trainingRounds): 
-            correctBitPredictions += stringOverlap(currentPredictionString, predictions[outputString])
+            correctBitPredictions += stringOverlap(currentPredictionString, predictions[outputString]) 
+            #    without training rounds, stringOverlap will be trying to compare binary stings with the string 'New input'. So correct BitPredictions is going to be 0 for a while,
+            #    until inputs start repeating.
                 
             newRegion.runCLA() # The CLA bit!
             numRuns += 1
             
             #printColumnStats(newRegion) 
-            accuracy = float(correctBitPredictions)/float(numRuns)
+            accuracy = float(correctBitPredictions)/float(30*numRuns) 
+            # Times thirty becuase it's measuring the correct prediction of BITS not whole bit-strings, and there are 30 bits per input.
+            # This makes sense as bits have semantic meaning where as bit-strings dont!
             accuracies.append(accuracy)
             
             if robot.killSwitch() == True: # This will terminate all loops and move to the end of the program
@@ -115,7 +122,7 @@ def experiment():
                     stuck_counter = 0
                     robot.move(-75)
             if state == "Reversing":                   
-                if robot.currentSonarReading >= starting_position:
+                if (starting_position-3) < robot.currentSonarReading < (starting_position+3): # Clean this up
                     state = "Going Forwards"                    
                     end_this_round = True
                     
@@ -132,12 +139,19 @@ def experiment():
     
     #code below prints a graph of runs against accuracies
     runs = np.arange(1, numRuns, 1)
+    plt.figure(1)
+    plt.subplot(211)
+    plt.grid(True)
     plt.plot(runs, accuracies)
     plt.plot(runs, accuracies, 'bo')
-    plt.xlabel('Number of CLA runs')
     plt.ylabel('Accuracy (correct preditions/predictions)')
     plt.title('Change in CLA accuracy of sonar position prediction')
+    plt.subplot(212)
     plt.grid(True)
+    plt.plot(runs, sonarPositionResults, 'r-')
+    plt.plot(runs, sonarPositionResults, 'ro')
+    plt.ylabel('Sonar Readings (cm)')
+    plt.xlabel('Number of CLA runs')
     plt.show()
 
 def stringOverlap(str1,str2):
@@ -187,7 +201,7 @@ def printColumnStats(region): # Called once on, or about, line 65
                 errorColumnsFound += 1
         print("Alarm Columns: " + str(alarmColumnCount) + " Stable Columns: " + str(stableColumnCount))
 
-# debug main run
+
 print("Searching for robot...")
 experiment() 
 # This is the only bit that really executes. Everythig else is just a method. The test count method calls all the others.
