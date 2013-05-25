@@ -10,19 +10,23 @@ from region import Region
 from config import *
 from inputbit import InputVector
 from Robot import *
+import matplotlib.pyplot as plt
+import numpy as np
 
 #from nxt.sensor import*    
 
 #brick = nxt.locator.find_one_brick()
 
-def testCount():
+def experiment():
     rows = 5
     cols = 5
     coverage = 20
     numbits = 10 # I may need more bits for my readngs.
     numRounds = 2
+    numRuns = 1
     minimum_distance = 7
-    trainingRounds = numRounds/4
+    #trainingRounds = numRounds/4
+    accuracies = []
     originalInputVector = InputVector(numbits)
     inputVector = InputVector(0)
     predictions = dict()
@@ -73,7 +77,7 @@ def testCount():
             setInput(originalInputVector,val) # These next few lines convert the inputs and outputs from integers to bitstrings,
             inputString = inputVector.toString() # so that the CLA can handle them.
             outputString = outputVector.toString()
-           #print(originalInputVector.toString())
+             #print(originalInputVector.toString())
                   
        	  #for bit in originalInputVector.getVector():
        	  #print(bit.bit)
@@ -90,8 +94,11 @@ def testCount():
             correctBitPredictions += stringOverlap(currentPredictionString, predictions[outputString])
                 
             newRegion.runCLA() # The CLA bit!
+            numRuns += 1
             
             #printColumnStats(newRegion) 
+            accuracy = float(correctBitPredictions)/float(numRuns)
+            accuracies.append(accuracy)
             
             if robot.killSwitch() == True: # This will terminate all loops and move to the end of the program
                 end_this_round = True
@@ -111,7 +118,7 @@ def testCount():
                 if robot.currentSonarReading >= starting_position:
                     state = "Going Forwards"                    
                     end_this_round = True
-                    print("Accuracy: " + str(float(correctBitPredictions)/float(30*(numRounds))))
+                    
                 
                 
            
@@ -122,6 +129,16 @@ def testCount():
 #        print("key: " + key + " predictions: " + predictions[key])
     robot.stop()    
     #print("Accuracy: " + str(float(correctBitPredictions)/float(30*(numRounds-trainingRounds))))
+    
+    #code below prints a graph of runs against accuracies
+    runs = np.arange(1, numRuns, 1)
+    plt.plot(runs, accuracies)
+    plt.plot(runs, accuracies, 'bo')
+    plt.xlabel('Number of CLA runs')
+    plt.ylabel('Accuracy (correct preditions/predictions)')
+    plt.title('Change in CLA accuracy of sonar position prediction')
+    plt.grid(True)
+    plt.show()
 
 def stringOverlap(str1,str2):
     count = 0
@@ -171,6 +188,6 @@ def printColumnStats(region): # Called once on, or about, line 65
         print("Alarm Columns: " + str(alarmColumnCount) + " Stable Columns: " + str(stableColumnCount))
 
 # debug main run
-print("Running!")
-testCount() 
+print("Searching for robot...")
+experiment() 
 # This is the only bit that really executes. Everythig else is just a method. The test count method calls all the others.
