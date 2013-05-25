@@ -51,7 +51,7 @@ def testCount():
 			currentPredictionString = predictions[outputString]
 		else:
 			currentPredictionString = "[New input]"
-			pred[outputString] = inputString # I'm sure this should be indented like this...
+		pred[outputString] = inputString
 		print("Round: %d" % round) # Prints the number of the round
 		printStats(inputString, currentPredictionString)
 		if (round > trainingRounds):
